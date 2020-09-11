@@ -9,7 +9,7 @@ This section will help you understand how Knative serverless configuration simpl
 
 ## Application architecture
 
-The Online Boutique is an example of a modern microservices architecture. It has a front end for serving the web application, nine other backend microservices for peforming specific application-related functions, and a database backend (in this case, Redis as an in-memory data store).
+The Online Boutique is an example of a modern microservices architecture. It has a front end for serving the web application, nine other backend microservices for peforming specific application-related functions, and a database backend (in this case, Redis Enterprise as an in-memory data store).
 
 _Microservice application architecture_
 
@@ -187,6 +187,8 @@ The configuration should look familiar now; the only a couple of things to note 
 
 * The `cartservice` takes a `port` option (`-p`); the option's value is supplied using the value of the `PORT` environment variable set by Knative. The `cartservice` determines the specific network interface to listen on using the `LISTEN_ADDR` environment variable.
 * It communicates with the data store backend using the address supplied with the `REDIS_ADDR` environment variable.
+
+We'll be changing this service later to reference our Redis Enterprise instance. 
 
 ## checkoutservice
 

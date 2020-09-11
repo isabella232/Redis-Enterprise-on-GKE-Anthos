@@ -1,32 +1,52 @@
-# Deploy the application
+# Convert from OpenSource Redis to Redis Enterprise
 
-For this section you might want to open two additional terminal windows or, if you're using a screen manager like [tmux], to open two additional panes in your terminal. The second window or pane will be useful for monitoring **all** the resources deployed on Kubernetes; the third will be useful for monitoring specifically the resources deployed as Knative services.
+For this section we'll convert from using OpenSource Redis to Redis Enterprise.
 
-In the second terminal window or pane, run the following command:
-
-```
-watch kubectl get deployment
-```
-
-In the third terminal window or pane, run:
-
-
-```
-watch kubectl get ksvc
-```
+This will involve the following steps:
+1. Deploy the Redis Enterprise Operator
+2. Create a Redis Enterprise cluster
+3. Deploy a Redis Enterprise Database (`redis-enterprise-database`) including setting the password to the null string
+4. Modify the `cartservice.yaml` to point to the new database service and port
+5. Redeploy the cartservice
 
 ## Steps
 
-1. Deploy the data store (redis) backend:
+1. Deploy the Redis Enterprise Operator
 
 ```
-kubectl apply -f kubernetes/redis-cart.yaml
+kubectl apply -f https://raw.githubusercontent.com/RedisLabs/redis-enterprise-k8s-docs/master/bundle.yaml
 ```
 
-2. Deploy the rest of the application as Knative services:
+2. Create a Redis Enterprise cluster
 
 ```
-kubectl apply -f knative/v1/services.yaml
+kubectl apply -f https://raw.githubusercontent.com/RedisLabs/redis-enterprise-k8s-docs/master/crds/app_v1_redisenterprisecluster_cr.yaml
+```
+
+3. Deploy a Redis Enterprise Database
+```
+kubectl apply -k Kustomization
+
+```
+You can get the port that the Redis Enterprise database is listening on with the following command:
+```
+kubectl get service/redis-enterprise-database -o jsonpath='{.spec.ports[?(@.name=="redis")].port}'
+```
+4. Modify the `cartservice.yaml`
+Edit `knative/cartservice.yaml` and replace
+```
+            value: "redis-enterprise-database-2:10692"
+```
+to
+```
+            value: "redis-enterprise-database:PORT"
+```
+where `PORT` is the database listening port you obtained from the previous step
+
+5. Update the `cartservice`
+
+```
+kubectl apply -f knative/cartservice.yaml
 ```
 
 ## Viewing the app for the first time

@@ -41,10 +41,10 @@ gcloud services enable container.googleapis.com containerregistry.googleapis.com
 ```
 gcloud beta container clusters create $CLUSTER \
   --release-channel regular \
-  --zone $ZONE --num-nodes 3 --machine-type n2-standard-4 \
+  --zone $ZONE --num-nodes 3 --machine-type n1-standard-8 \
   --enable-autoscaling --min-nodes 3 --max-nodes 6 \
   --enable-ip-alias \
-  --addons CloudRun,HttpLoadBalancing --enable-stackdriver-kubernetes
+  --addons CloudRun,HttpLoadBalancing --enable-stackdriver-kubernetes --enable-basic-auth
 ```
 
 The last line of the command specifically adds everything needed for Cloud Run for Anthos, including logging.
@@ -57,10 +57,11 @@ The application source code and sample Kubernetes and Istion manifests on GitHub
 
 However, for this tutorial, you will use the manifests located at [subfuzion/cloud-run-for-anthos-labs] instead. We will cover the differences between the Kubernetes and the Knative manifests in the next section.
 
-Clone the repo to your system so you will be able to review, apply and update the Knative manifests to deploy the app for this tutorial.
+Clone the repo to your system so you will be able to review, apply and update the Knative manifests to deploy the app for this tutorial. Make sure you checkout this branch (`redis_enterprise_demo`)
 
 ```
-git clone https://github.com/subfuzion/cloud-run-for-anthos-labs.git 
+git clone https://github.com/subfuzion/cloud-run-for-anthos-labs.git
+git checkout redis_enterprise_demo
 ```
 
 Then, change directory to this lab:

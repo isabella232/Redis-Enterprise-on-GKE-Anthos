@@ -4,8 +4,8 @@ kind: Kustomization
 
 # list of Resource Config to be Applied
 resources:
+  - rdb-secret.yaml
   - redis-enterprise-database.yaml
-  - redis-enterprise-database-secret.yaml
 
 # namespace to deploy all Resources to
 namespace: default
