@@ -30,9 +30,9 @@ MAXNODES="${MAXNODES:-6}"
 MACHINE="${MACHINE:-n2-standard-4}"
 CHANNEL="${CHANNEL:-regular}"
 
-gcloud beta container clusters create "${CLUSTER}" \
-  --release-channel "${CHANNEL}" \
-  --zone "${ZONE}" --num-nodes "${NODES}" --machine-type "${MACHINE}" \
-  --enable-autoscaling --min-nodes "${NODES}" --max-nodes "${MAXNODES}" \
+gcloud container clusters create "${CLUSTER:-tobys-k8s-cluster}" \
+  --release-channel "${CHANNEL:-regular}" \
+  --zone "${ZONE:-us-west2-a}" --num-nodes "${NODES:-3}" --machine-type "${MACHINE:-n1-standard-8}" \
+  --enable-autoscaling --min-nodes "${NODES:-3}" --max-nodes "${MAXNODES:-6}" \
   --enable-ip-alias \
-  --addons CloudRun,HttpLoadBalancing --enable-stackdriver-kubernetes
+  --addons CloudRun,HttpLoadBalancing --enable-stackdriver-kubernetes --enable-basic-auth
