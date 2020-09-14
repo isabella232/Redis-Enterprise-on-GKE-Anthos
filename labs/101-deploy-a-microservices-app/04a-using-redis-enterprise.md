@@ -3,7 +3,7 @@
 For this section we'll convert from using OpenSource Redis to Redis Enterprise.
 
 This will involve the following steps:
-1. Deploy the Redis Enterprise Operator
+1. Deploy the [Redis Enterprise Operator]
 2. Create a Redis Enterprise cluster
 3. Deploy a Redis Enterprise Database (`redis-enterprise-database`) including setting the password to the null string
 4. Modify the `cartservice.yaml` to point to the new database service and port
@@ -34,9 +34,9 @@ The `redis-enterprise` service has 3 pods associated with it (the nodes in the R
 
 
 3. Deploy the Redis Enterprise Database
-Deploying a database requires a secret and a database specification, as per  [RedisEnterpriseDatabaseSpec](https://github.com/RedisLabs/redis-enterprise-k8s-docs/blob/master/redis_enterprise_database_api.md#redisenterprisedatabasespec)
+Deploying a database requires a secret and a database specification, as per the  [RedisEnterpriseDatabaseSpec]
 
-This is done using [Kubernetes Kustomization](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/) by applying the files in the `Kustomization` directory.
+This is done using [Kubernetes Kustomization] by applying the files in the `Kustomization` directory.
 
 The `Kustomization` directory contains two files:
 * `Kustomization.yaml` -which references the other two:
@@ -51,7 +51,9 @@ This will create two new services:
 * redis-enterprise-database - the database itself
 * redis-enterprise-database-headless - I don't know what this is :-(
 
-You can get the port that the Redis Enterprise database is listening on with the following command:
+It will take several minutes (3-5, at a guess) to create the pods and service for the Redis Enterprise Cluster and database to be fully created. 
+
+Once the `redis-enterprise-database` service is up you can get the port that the  database is listening on with the following command:
 
 ```
 kubectl get service/redis-enterprise-database -o jsonpath='{.spec.ports[?(@.name=="redis")].port}'
@@ -63,6 +65,8 @@ You need to disconnect the cart service from the OpenSource Redis database and s
 Edit `knative/*/services.yaml` and replace this line:
 ```
             value: "redis-cart:6379"
+```
+with this one:
 ```
             value: "redis-enterprise-database:DBPORT"
 ```
@@ -79,7 +83,7 @@ done
 5. Update the knative services
 
 ```
-kubectl apply -f knative/v1
+kubectl apply -f knative/v1/services.yaml
 ```
 
 6. Delete the `redis-cart` service
@@ -89,18 +93,22 @@ kubectl delete deployment/redis-cart
 ```
 If you list the pods you'll see that the redis-cart pod is terminating. However your web site will continue to function!
 
-### Note to Kubernetes/Knative experts
+Go back to your browser and refresh it - it might take a little time to refresh, but after a minute or so you should see the online shop experience again. The only thing that has changed is that the cart is now being served by Redis Enterprise, so the cart is now highly available and scalable.
+
+### Side Note to Kubernetes/Knative experts
 
 If you know of a better way of achieving steps 4 thru' 6 above then do
 let me know. I was expecting some way of linking the port number so it
 could be discovered dynamically at run time, rather than hard-coding
 the port number into the file using a script!
 
+
+
 ## Redis Enterprise
 
 ### Redis Enterprise Cluster Manager UI
 
-The Redis Enterprise Cluster Manager UI is available via port forwarding. Its not intended that you manage the Redis Enterprise Cluster on Kubernetes using it (you should instead use `kubectl` and the [Redis Enterprise Cluster API](https://github.com/RedisLabs/redis-enterprise-k8s-docs/blob/master/redis_enterprise_cluster_api.md)), but many people are used to viewing this UI so its useful to view it.
+The Redis Enterprise Cluster Manager UI is available via port forwarding. Its not intended that you manage the Redis Enterprise Cluster on Kubernetes using it (you should instead use `kubectl` and the [Redis Enterprise Cluster API]), but many people are used to viewing this UI so its useful to view it.
 
 To setup for this UI you'll need to:
 1. In one terminal setup up port forwarding port 8443 from your laptop to a Redis Enterprise pod
@@ -117,16 +125,16 @@ kubectl get secrets redis-enterprise -o json | jq -r '[.data.username, .data.pas
 If you want to interact with your database using the redis cli you must attach to one of the kubernetes containers in the cluster. The simplest way to do that is like this:
 1. Get the database port inside the cluster
 ```
-kubectl get service/redis-enterprise-database -o jsonpath='{.spec.ports[?(@.name=="redis")].port}'
+DBPORT=$(kubectl get service/redis-enterprise-database -o jsonpath='{.spec.ports[?(@.name=="redis")].port}')
 ```
-2. Create a shell on a redis-enterprise container:
+2. Create a shell on a redis-enterprise container connected to the redis-enterprise-database:
 ```
-kubectl exec -it redis-enterprise-0 -c redis-enterprise-node -- /bin/bash
-```
-	3. Use the redis-cli to connect to your database, using the database service name (`redis-enterprise-database`) database port. 
-```
-redis-cli -h redis-enterprise-database -p PORT
+kubectl exec -it redis-enterprise-0 -c redis-enterprise-node -- /bin/bash -c "redis-cli -h redis-enterprise-database -p $DBPORT"
 ```
 
+[Redis Enterpise Operator]: https://github.com/RedisLabs/redis-enterprise-k8s-docs/blob/master/operator.yaml
+[RedisEnterpriseDatabaseSpec]: https://github.com/RedisLabs/redis-enterprise-k8s-docs/blob/master/redis_enterprise_database_api.md#redisenterprisedatabasespec
+[Kubernetes Kustomization]: https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/
+[Redis Enterprise Cluster API]: https://github.com/RedisLabs/redis-enterprise-k8s-docs/blob/master/redis_enterprise_cluster_api.md
 ---
 [[toc]](README.md) [[back]](03-knative-configuration.md) [[next]](05-autoscaling.md)

@@ -131,7 +131,6 @@ kubectl apply -f configmaps/config-domain.yaml
   
 Then, follow the steps at [Publish your Domain] to update your DNS records.
 
-
 [article]: https://infoheap.com/chrome-add-custom-http-request-headers/
 [Envoy]: https://envoyproxy.io/
 [Publish your Domain]: https://knative.dev/docs/serving/using-a-custom-domain/#publish-your-domain

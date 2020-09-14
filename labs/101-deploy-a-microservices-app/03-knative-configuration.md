@@ -9,7 +9,7 @@ This section will help you understand how Knative serverless configuration simpl
 
 ## Application architecture
 
-The Online Boutique is an example of a modern microservices architecture. It has a front end for serving the web application, nine other backend microservices for peforming specific application-related functions, and a database backend (in this case, Redis Enterprise as an in-memory data store).
+The Online Boutique is an example of a modern microservices architecture. It has a front end for serving the web application, nine other backend microservices for peforming specific application-related functions, and a database backend (to begin with, Open Source Redis, which we'll subsequently swap out for Redis Enterprise as an in-memory data store).
 
 _Microservice application architecture_
 
@@ -28,7 +28,7 @@ Knative registers its own API types to the Kubernetes API, so working with it is
 
 ### Stateful services
 
-In the architecture diagram above, the database is not a candidate for running with Knative since it is a stateful service that [requires access to a volume]. With Knative Serving, all volume mounts are disallowed except for ConfigMaps and Secrets. Stateless services under Knative Serving are expected to be able to scale horizontally and having shared state in volumes would severely impede that goal.
+In the architecture diagram above, the database is not a candidate for running with Knative since it is a stateful service that requires access to a volume. With Knative Serving, all volume mounts are disallowed except for ConfigMaps and Secrets. Stateless services under Knative Serving are expected to be able to scale horizontally and having shared state in volumes would severely impede that goal. So this means that we'll deploy Redis as a Kubernetes service, not using Knative.
 
 ### Stateless services
 
@@ -188,7 +188,7 @@ The configuration should look familiar now; the only a couple of things to note 
 * The `cartservice` takes a `port` option (`-p`); the option's value is supplied using the value of the `PORT` environment variable set by Knative. The `cartservice` determines the specific network interface to listen on using the `LISTEN_ADDR` environment variable.
 * It communicates with the data store backend using the address supplied with the `REDIS_ADDR` environment variable.
 
-We'll be changing this service later to reference our Redis Enterprise instance. 
+We'll be changing this service later (by changing the REDIS_ADDR envar) to reference our Redis Enterprise instance. 
 
 ## checkoutservice
 

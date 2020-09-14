@@ -4,7 +4,7 @@
 
 > Tip: If you are using Cloud Shell in the Google Cloud console, you can skip steps 1 and 2.
 
-1. [Install the Cloud SDK], which includes the `gcloud` command-line tool. Ensure you follow all the steps to **select or create a project** and **confirm that billing is enabled** for your project.
+1. [Install the Cloud SDK], which includes the `gcloud` command-line tool. Ensure you follow all the steps to [select or create a project] and [confirm that billing is enabled] for your project.
 2. Install `kubectl`.  You can use gcloud (shown below) or go to the [Kubernetes docs].
 
 ```
@@ -13,8 +13,8 @@ gcloud components install kubectl
 
 ## Set up environment variables
 
-1. If you skipped steps 1 and 2 above, then make sure now to [select or create a project] now and [confirm billing is enabled] for it.
-2. Set `PROJECT_ID`, `ZONE, and CLUSTER` environment variables, as shown below (change any values as desired; you can select any zone from [here]):
+1. If you skipped steps 1 and 2 above, then make sure now to [select or create a project] now and [confirm that billing is enabled] for it.
+2. Set `PROJECT_ID`, `ZONE, and CLUSTER` environment variables, as shown below (change any values as desired, using the [zone list] to pick a zone):
 
 ```
 PROJECT_ID=myproject
@@ -26,6 +26,7 @@ gcloud config set compute/zone $ZONE
 CLUSTER=cluster-1
 ```
 
+
 ## Enable Google Cloud APIs for your project
 
 1. Enable the following APIs needed for Cloud Run for Anthos:
@@ -33,23 +34,6 @@ CLUSTER=cluster-1
 ```
 gcloud services enable container.googleapis.com containerregistry.googleapis.com cloudbuild.googleapis.com
 ```
-
-## Create a GKE cluster
-
-1. Create a cluster enabled for Cloud Run with enough worker nodes to run and scale the microservices demo app:
-
-```
-gcloud beta container clusters create $CLUSTER \
-  --release-channel regular \
-  --zone $ZONE --num-nodes 3 --machine-type n1-standard-8 \
-  --enable-autoscaling --min-nodes 3 --max-nodes 6 \
-  --enable-ip-alias \
-  --addons CloudRun,HttpLoadBalancing --enable-stackdriver-kubernetes --enable-basic-auth
-```
-
-The last line of the command specifically adds everything needed for Cloud Run for Anthos, including logging.
-
-> Tip: You can also use the shell script at `cluster/cluster.sh` to create a cluster.
 
 ## Clone the configuration repository
 
@@ -70,9 +54,19 @@ Then, change directory to this lab:
 cd cloud-run-for-anthos-labs/labs/101-deploy-a-microservices-app/
 ```
 
-[confirm billing is enabled]: https://cloud.google.com/billing/docs/how-to/modify-project
+## Create a GKE cluster
+
+1. Create a cluster enabled for Cloud Run with enough worker nodes to run and scale the microservices demo app:
+
+```
+cluster/cluster.sh
+```
+
+
+
+[confirm that billing is enabled]: https://cloud.google.com/billing/docs/how-to/modify-project
 [GoogleCloudPlatform/microservices-demo]: https://github.com/GoogleCloudPlatform/microservices-demo
-[here]: https://cloud.google.com/compute/docs/regions-zones#available
+[zone list]: https://cloud.google.com/compute/docs/regions-zones#available
 [select or create a project]: https://cloud.google.com/resource-manager/docs/creating-managing-projects#console
 [Install the Cloud SDK]: https://cloud.google.com/sdk/install
 [Kubernetes docs]: https://kubernetes.io/docs/tasks/tools/install-kubectl/

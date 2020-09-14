@@ -35,4 +35,4 @@ gcloud container clusters create "${CLUSTER:-tobys-k8s-cluster}" \
   --zone "${ZONE:-us-west2-a}" --num-nodes "${NODES:-3}" --machine-type "${MACHINE:-n1-standard-8}" \
   --enable-autoscaling --min-nodes "${NODES:-3}" --max-nodes "${MAXNODES:-6}" \
   --enable-ip-alias \
-  --addons CloudRun,HttpLoadBalancing --enable-stackdriver-kubernetes --enable-basic-auth
+  --addons CloudRun,HttpLoadBalancing --enable-stackdriver-kubernetes
