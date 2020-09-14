@@ -14,7 +14,7 @@ kubectl delete -f kubernetes/
 3\. If you want to delete the entire cluster:
 
 ```
-gcloud container clusters delete cluster-1
+cluster/delete-cluster.sh
 ```
 
 

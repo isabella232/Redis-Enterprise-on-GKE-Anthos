@@ -23,7 +23,7 @@
 # https://support.google.com/googleapi/answer/6251787?hl=en
 #
 
-CLUSTER="${CLUSTER:-cluster-1}"
+CLUSTER="${CLUSTER:-${USER}-cluster-1}"
 ZONE="${ZONE:-us-central1-c}"
 NODES="${NODES:-3}"
 MAXNODES="${MAXNODES:-6}"
