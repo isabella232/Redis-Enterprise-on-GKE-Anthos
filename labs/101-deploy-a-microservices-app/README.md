@@ -6,6 +6,7 @@
 [2 Setting up](02-setting-up.md)  
 [3 Knative configuration](03-knative-configuration.md)  
 [4 Deploy the app](04-deploy-the-app.md)  
+[4a Convert from OpenSource Redis to Redis Enterprise](04a-using-redis-enterprise.md)  
 [5 Autoscaling](05-autoscaling.md)  
 [6 Cleanup](06-cleanup.md)  
 

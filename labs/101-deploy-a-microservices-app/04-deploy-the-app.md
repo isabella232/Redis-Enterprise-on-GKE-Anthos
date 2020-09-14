@@ -139,4 +139,4 @@ Then, follow the steps at [Publish your Domain] to update your DNS records.
 [tmux]: https://github.com/tmux/tmux/wiki
 
 ---
-[[toc]](README.md) [[back]](03-knative-configuration.md) [[next]](05-autoscaling.md)
+[[toc]](README.md) [[back]](03-knative-configuration.md) [[next]](04a-using-redis-enterprise.md)

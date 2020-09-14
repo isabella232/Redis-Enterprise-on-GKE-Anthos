@@ -7,7 +7,8 @@ This will involve the following steps:
 2. Create a Redis Enterprise cluster
 3. Deploy a Redis Enterprise Database (`redis-enterprise-database`) including setting the password to the null string
 4. Modify the `cartservice.yaml` to point to the new database service and port
-5. Redeploy the cartservice
+5. Update the services (particularly the cartservice)
+6. Delete the now unused `redis-cart` service
 
 ## Steps
 
@@ -17,146 +18,115 @@ This will involve the following steps:
 kubectl apply -f https://raw.githubusercontent.com/RedisLabs/redis-enterprise-k8s-docs/master/bundle.yaml
 ```
 
+You can see that this has created a new deployment `redis-enterprise-operator` and a pod `redis-enterprise-operator-6498bcf4c7-mps6p` (yours will be named differently)
+
 2. Create a Redis Enterprise cluster
 
 ```
 kubectl apply -f https://raw.githubusercontent.com/RedisLabs/redis-enterprise-k8s-docs/master/crds/app_v1_redisenterprisecluster_cr.yaml
 ```
 
-3. Deploy a Redis Enterprise Database
+This uses the operator to create a rigger deployment (`redis-enterprise-services-rigger`) and pod (`redis-enterprise-services-rigger-7b8cdb6ff-qn69w`), along with two new services:
+* `redis-enterprise` - the redis enterprise cluster
+* `redis-enterprise-ui` - the redis enterprise management interface
+
+The `redis-enterprise` service has 3 pods associated with it (the nodes in the Redis Enterprise cluster): `redis-enterprise-{1,2,3}`
+
+
+3. Deploy the Redis Enterprise Database
+Deploying a database requires a secret and a database specification, as per  [RedisEnterpriseDatabaseSpec](https://github.com/RedisLabs/redis-enterprise-k8s-docs/blob/master/redis_enterprise_database_api.md#redisenterprisedatabasespec)
+
+This is done using [Kubernetes Kustomization](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/) by applying the files in the `Kustomization` directory.
+
+The `Kustomization` directory contains two files:
+* `Kustomization.yaml` -which references the other two:
+* `rdb-secret.yaml` - which creates the default password for the cluster (it actually deletes the password by setting it to the null string)
+* `redis-enterprise-database.yaml` - which configures the redis enterprise database
+
 ```
 kubectl apply -k Kustomization
 
 ```
+This will create two new services:
+* redis-enterprise-database - the database itself
+* redis-enterprise-database-headless - I don't know what this is :-(
+
 You can get the port that the Redis Enterprise database is listening on with the following command:
+
 ```
 kubectl get service/redis-enterprise-database -o jsonpath='{.spec.ports[?(@.name=="redis")].port}'
 ```
+
 4. Modify the `cartservice.yaml`
-Edit `knative/cartservice.yaml` and replace
-```
-            value: "redis-enterprise-database-2:10692"
-```
-to
-```
-            value: "redis-enterprise-database:PORT"
-```
-where `PORT` is the database listening port you obtained from the previous step
+You need to disconnect the cart service from the OpenSource Redis database and start using the new one (no data migrations are configured - so anything in the old cart will be lost)
 
-5. Update the `cartservice`
-
+Edit `knative/*/services.yaml` and replace this line:
 ```
-kubectl apply -f knative/cartservice.yaml
+            value: "redis-cart:6379"
 ```
-
-## Viewing the app for the first time
-
-If you were running a watch for `kubectl get ksvc` in another terminal window or pane, you will see URLs for each of the deployed Knative services. By default, the domain is `example.com`, so the `frontend`'s fully qualified domain name (FQDN) should be  `frontend.default.example.com`, while all of the private (cluster local) services should be `{name}.default.svc.cluster.local`.
-
-![deployed v1](assets/terminal-deployed-v1.png)
-
-All traffic, internal and external, go through ingress gateways ([Envoy] proxies, by default) to provide the load balancing and traffic routing/splitting support for your application. If you run the following command, you can see information about the external-facing (`istio-ingress`) and internal-facing (`cluster-local-gateway) `objects created for Cloud Run for Anthos.
-
+            value: "redis-enterprise-database:DBPORT"
 ```
-kubectl get svc -n gke-system
+where DBPORT is the value you found for the port number for the redis-enterprise-database previously. 
+
+This sed script will do it for you:
+```
+for dir in v{1..3}
+do
+        sed -i .bak s/redis-cart:6379/redis-enterprise-database:$(kubectl get service/redis-enterprise-database -o jsonpath='{.spec.ports[?(@.name=="redis")].port}')/ knative/$dir/services.yaml
+done
 ```
 
-Example output:
+5. Update the knative services
 
 ```
-NAME                    TYPE           CLUSTER-IP    EXTERNAL-IP     PORT(S)                                      AGE
-cluster-local-gateway   ClusterIP      10.8.9.102    <none>          15020/TCP,80/TCP,443/TCP                     1d
-istio-ingress           LoadBalancer   10.8.13.245   34.69.217.227   15020:30372/TCP,80:30070/TCP,443:30813/TCP   1d
+kubectl apply -f knative/v1
 ```
 
-1. Get the Knative gateway IP:
-
+6. Delete the `redis-cart` service
+Deleting the service is achieved by deleting the deployment:
 ```
-kubectl get svc istio-ingress --namespace gke-system
+kubectl delete deployment/redis-cart
 ```
+If you list the pods you'll see that the redis-cart pod is terminating. However your web site will continue to function!
 
-2. Get the URL for the Knative route for `frontend`:
+### Note to Kubernetes/Knative experts
 
+If you know of a better way of achieving steps 4 thru' 6 above then do
+let me know. I was expecting some way of linking the port number so it
+could be discovered dynamically at run time, rather than hard-coding
+the port number into the file using a script!
+
+## Redis Enterprise
+
+### Redis Enterprise Cluster Manager UI
+
+The Redis Enterprise Cluster Manager UI is available via port forwarding. Its not intended that you manage the Redis Enterprise Cluster on Kubernetes using it (you should instead use `kubectl` and the [Redis Enterprise Cluster API](https://github.com/RedisLabs/redis-enterprise-k8s-docs/blob/master/redis_enterprise_cluster_api.md)), but many people are used to viewing this UI so its useful to view it.
+
+To setup for this UI you'll need to:
+1. In one terminal setup up port forwarding port 8443 from your laptop to a Redis Enterprise pod
 ```
-kubectl get route frontend
+kubectl port-forward redis-enterprise-0 8443
 ```
-
-3. Confirm access
-
-Try running the following command (note for `Host` you only use the FQDN without the `http://` URL prefix), substituting as appropriate with the information from the first two steps:
-
+2. In another terminal get the login credentials:
 ```
-curl -H "Host: frontend.default.example.com" 34.69.217.227
+kubectl get secrets redis-enterprise -o json | jq -r '[.data.username, .data.password] | map(@base64d) | .[]'
 ```
+3. In a browser, go to http://localhost:8443, where you'll  be forward to the Redis Enterprise Cluster Manager UI
 
-
-If all went well, you should see a bunch of HTML output in your terminal. If not, check the status of the services you deployed and ensure they are all ready.
-
-### Viewing the app in a browser
-
-Since you don't own the default domain (`example.com`), you won't be able to configure DNS records for it to have it resolve to your app's IP address . The solution is configure domain mapping for a domain you own. But if you just want to quickly test the app on your own system, keep reading, otherwise skip ahead to custom domain mapping.
-
-To view the app in a browser, you need to ensure that the request identifies the correct host either from the URL that you enter in the browser or else contains an HTTP header with the correct host (as shown above with the `curl ` example ) so that the ingress gateway can route the request correctly. Until you map a custom domain, there are a couple of tricks you can use.
-  
-#### Edit your local `/etc/hosts` file
-
-With this method, you'll update your local `/etc/hosts` file so that URL can resolve to an IP address on your system. You will need to have `sudo` access on your system to do this.
-
-1\. Get the Knative gateway IP:
-
-This is similar to what you used in the `curl` example earlier, but this time we'll save the IP to a variable.
-
+### Redis-cli access
+If you want to interact with your database using the redis cli you must attach to one of the kubernetes containers in the cluster. The simplest way to do that is like this:
+1. Get the database port inside the cluster
 ```
-IP=$(kubectl get svc istio-ingress --namespace gke-system --output jsonpath="{.status.loadBalancer.ingress[*]['ip']}")
+kubectl get service/redis-enterprise-database -o jsonpath='{.spec.ports[?(@.name=="redis")].port}'
 ```
-
-2\. Get the DNS name from the URL for the Knative route to the `frontend
- ` service:
-
+2. Create a shell on a redis-enterprise container:
 ```
-NAME=$(kubectl get route frontend --output jsonpath="{.status.url}" | cut -d'/' -f 3)
+kubectl exec -it redis-enterprise-0 -c redis-enterprise-node -- /bin/bash
 ```
-
-3\. Run the following to append an entry to your local `/etc/hosts` file.
-
+	3. Use the redis-cli to connect to your database, using the database service name (`redis-enterprise-database`) database port. 
 ```
-echo -e "$IP\t$NAME" | sudo tee -a /etc/hosts
+redis-cli -h redis-enterprise-database -p PORT
 ```
-
-You should edit your `/etc/hosts` file to remove this entry when you no longer need it.
-
-#### Add a chrome extension to your browser
-
-This technique works with the Chrome browser. Use an extension that allows
- you to set an HTTP header for the host like we did with the `curl` example
- . Read this [article] about how to add and use the `ModHeader` chrome extension.
-
-When you configure the extension, also add a filter for the URL pattern so
- that the header is only modified for requests specifically to the IP address
- for the app. See the screenshot below:
-
-![ModHeader extension](assets/modheader-extension.png)
-
-### Custom domain mapping
-
-Previously you saw a couple of ways to quickly test your app without setting up a custom domain. At some point, however, you'll want to be able to publish the app under a domain name that you control.
-
-You will want to read the docs for [Setting up a custom domain].
-
-To help you get started with the domain configuration config-map, there is a template under the `configmaps` directory [config-domain.example.yaml](configmaps/config-domain.example.yaml) that you can copy to `config-domain.yaml` and edit. After you replace `example.com` with the domain name you want to use, you can apply the config-map:
-    
-```
-kubectl apply -f configmaps/config-domain.yaml
-```
-  
-Then, follow the steps at [Publish your Domain] to update your DNS records.
-
-
-[article]: https://infoheap.com/chrome-add-custom-http-request-headers/
-[Envoy]: https://envoyproxy.io/
-[Publish your Domain]: https://knative.dev/docs/serving/using-a-custom-domain/#publish-your-domain
-[Setting up a custom domain]: https://knative.dev/docs/serving/using-a-custom-domain/
-[tmux]: https://github.com/tmux/tmux/wiki
 
 ---
 [[toc]](README.md) [[back]](03-knative-configuration.md) [[next]](05-autoscaling.md)
