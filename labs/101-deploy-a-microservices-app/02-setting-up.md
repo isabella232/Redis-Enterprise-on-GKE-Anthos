@@ -44,7 +44,7 @@ However, for this tutorial, you will use the manifests located at [subfuzion/clo
 Clone the repo to your system so you will be able to review, apply and update the Knative manifests to deploy the app for this tutorial. Make sure you checkout this branch (`redis_enterprise_demo`)
 
 ```
-git clone https://github.com/subfuzion/cloud-run-for-anthos-labs.git
+git clone https://github.com/Redislabs-Solution-Architects/cloud-run-for-anthos-labs.git
 git checkout redis_enterprise_demo
 ```
 
