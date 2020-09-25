@@ -7,3 +7,4 @@ spec:
     name: redis-enterprise
   memorySize: 100MB
   databaseSecretName: rdb-secret
+  

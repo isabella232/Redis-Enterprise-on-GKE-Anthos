@@ -52,8 +52,18 @@ spec:
         env:
           - name: LISTEN_ADDR
             value: "0.0.0.0"
+          - name: REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: rdb-secret
+                key: port
+          - name: REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: rdb-secret
+                key: service_name
           - name: REDIS_ADDR
-            value: "redis-cart:6379"
+            value: "$(REDIS_HOST):$(REDIS_PORT)"
         resources:
           requests:
             cpu: 200m

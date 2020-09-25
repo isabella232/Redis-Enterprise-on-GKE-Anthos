@@ -54,5 +54,5 @@ If you only want to generate load for short periods of time, then the configurat
 [ten minutes]: https://github.com/knative/serving/blob/master/pkg/apis/config/defaults.go#L46
 
 ---
-[[toc]](README.md) [[back]](04a-using-redis-enterprise.md) [[next]](06-cleanup.md)
+[[toc]](README.md) [[back]](04-deploy-the-app.md) [[next]](06-cleanup.md)
 

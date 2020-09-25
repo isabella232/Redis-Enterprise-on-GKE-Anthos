@@ -9,7 +9,7 @@ This section will help you understand how Knative serverless configuration simpl
 
 ## Application architecture
 
-The Online Boutique is an example of a modern microservices architecture. It has a front end for serving the web application, nine other backend microservices for peforming specific application-related functions, and a database backend (to begin with, Open Source Redis, which we'll subsequently swap out for Redis Enterprise as an in-memory data store).
+The Online Boutique is an example of a modern microservices architecture. It has a front end for serving the web application, nine other backend microservices for peforming specific application-related functions, and a redis database backend using Redis Enterprise as an in-memory data store.
 
 _Microservice application architecture_
 
@@ -28,7 +28,7 @@ Knative registers its own API types to the Kubernetes API, so working with it is
 
 ### Stateful services
 
-In the architecture diagram above, the database is not a candidate for running with Knative since it is a stateful service that requires access to a volume. With Knative Serving, all volume mounts are disallowed except for ConfigMaps and Secrets. Stateless services under Knative Serving are expected to be able to scale horizontally and having shared state in volumes would severely impede that goal. So this means that we'll deploy Redis as a Kubernetes service, not using Knative.
+In the architecture diagram above, the Redis Enteprise database is not a candidate for running with Knative since it is a stateful service that requires access to a volume, which are not allowed under Knative Serving except for ConfigMaps and Secrets. Stateless services under Knative Serving are expected to be able to scale horizontally and having shared state in volumes would severely impede that goal. So this means that we'll deploy Redis Enterprise as a Kubernetes service, not using Knative.
 
 ### Stateless services
 
@@ -149,7 +149,7 @@ There are two important things to note:
 
 ## cartservice
 
-The `cartservice` provides shopping cart functionality for the app. 
+The `cartservice` provides shopping cart functionality for the app, leveraging the capabilities of the Kubernetes Redis Enterprise service 
 
 ### [services.yaml](https://github.com/subfuzion/cloud-run-for-anthos-labs/blob/master/labs/101-deploy-a-microservices-app/knative/v1/services.yaml#L36-L63) → cartservice
 
@@ -172,8 +172,18 @@ spec:
         env:
           - name: LISTEN_ADDR
             value: "0.0.0.0"
+          - name: REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: rdb-secret
+                key: port
+          - name: REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: rdb-secret
+                key: service_name              
           - name: REDIS_ADDR
-            value: "redis-cart:6379"
+            value: "$(REDIS_HOST):$(REDIS_PORT)"
         resources:
           requests:
             cpu: 200m
@@ -186,9 +196,9 @@ spec:
 The configuration should look familiar now; the only a couple of things to note here:
 
 * The `cartservice` takes a `port` option (`-p`); the option's value is supplied using the value of the `PORT` environment variable set by Knative. The `cartservice` determines the specific network interface to listen on using the `LISTEN_ADDR` environment variable.
-* It communicates with the data store backend using the address supplied with the `REDIS_ADDR` environment variable.
-
-We'll be changing this service later (by changing the REDIS_ADDR envar) to reference our Redis Enterprise instance. 
+* It communicates with the data store backend using the address supplied with the `REDIS_ADDR` environment variable. This is comprised of two variables that are exposed as a secret. This secret is documented [online](https://docs.redislabs.com/latest/platforms/kubernetes/db-controller/#databasesecretname)
+  * REDIS_HOST - the hostname of the Redis Enterprise database
+  * REDIS_PORT - the port that the Redis Enterprise database is listening on.
 
 ## checkoutservice
 
@@ -441,6 +451,6 @@ The `shippingservice` listens on a specific port (`3550`), so this needs to be s
 [service configuration]: https://knative.dev/docs/reference/serving-api/#serving.knative.dev/v1.Service
 [ten minutes]: https://github.com/knative/serving/blob/master/pkg/apis/config/defaults.go#L46
 [private cluster-local service]: https://knative.dev/docs/serving/cluster-local-route/
-
+[Redis Enterprise Custom Resource]: 
 ---
 [[toc]](README.md) [[back]](02-setting-up.md) [[next]](04-deploy-the-app.md)
