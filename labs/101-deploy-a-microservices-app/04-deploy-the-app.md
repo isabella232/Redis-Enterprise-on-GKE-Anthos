@@ -17,16 +17,53 @@ watch kubectl get ksvc
 
 ## Steps
 
-1. Deploy the data store (redis) backend:
+1. Deploy Redis Enterprise
 
-```
-kubectl apply -f kubernetes/redis-cart.yaml
-```
+  This requires several steps. As discussed previously Redis
+  Enterprise is stateful, for good reasons. It is therefore deployed
+  as a standard kubernetes application, not knative.
+  
+  Read the [documentation](https://docs.redislabs.com/latest/platforms/kubernetes/) for further details.
+  1. Deploy the Redis Enterprise Operator
+
+  ```
+  kubectl apply -f https://raw.githubusercontent.com/RedisLabs/redis-enterprise-k8s-docs/master/bundle.yaml
+  ```
+
+  You can see that this has created a new deployment `redis-enterprise-operator` and a pod `redis-enterprise-operator-6498bcf4c7-mps6p` (yours will be named differently)
+
+  2. Create a Redis Enterprise cluster
+
+  ```
+  kubectl apply -f https://raw.githubusercontent.com/RedisLabs/redis-enterprise-k8s-docs/master/crds/app_v1_redisenterprisecluster_cr.yaml
+  ```
+
+  This uses the operator to create a rigger deployment (`redis-enterprise-services-rigger`) and pod (`redis-enterprise-services-rigger-7b8cdb6ff-qn69w`), along with two new services:
+  * `redis-enterprise` - the redis enterprise cluster
+  * `redis-enterprise-ui` - the redis enterprise management interface
+
+  The `redis-enterprise` service has 3 pods associated with it (the nodes in the Redis Enterprise cluster): `redis-enterprise-{1,2,3}`
+
+  1. Remove the authentication password
+  The way this demo was originally written it doesn't use authenticate against the Redis database. So, for now, we simply remove the password. This requires creating a secret and setting the password to the empty string:
+  ```
+  kubectl apply -f kubernetes/rdb-secret.yaml
+  ```
+  4. Deploy the Redis Enterprise Database
+  ```
+  kubectl apply -f kubernetes/redis-enterprise-database.yaml
+
+  ```
+  This will create two new services:
+  * redis-enterprise-database - the database itself
+  * redis-enterprise-database-headless
+
+  It will take several minutes (3-5, at a guess) to create the pods and service for the Redis Enterprise Cluster and database to be fully created. 
 
 2. Deploy the rest of the application as Knative services:
 
 ```
-kubectl apply -f knative/v1
+kubectl apply -f knative/v1/services.yaml
 ```
 
 ## Viewing the app for the first time
@@ -130,7 +167,6 @@ kubectl apply -f configmaps/config-domain.yaml
 ```
   
 Then, follow the steps at [Publish your Domain] to update your DNS records.
-
 
 [article]: https://infoheap.com/chrome-add-custom-http-request-headers/
 [Envoy]: https://envoyproxy.io/

@@ -1,4 +1,4 @@
-# Deploy a microservices app to Cloud Run
+# Use Redis Enterprise with Cloud Run
 
 ## Contents
 

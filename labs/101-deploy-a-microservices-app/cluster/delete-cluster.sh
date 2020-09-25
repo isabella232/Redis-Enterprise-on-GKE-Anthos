@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-CLUSTER="${CLUSTER:-cluster-1}"
+CLUSTER="${CLUSTER:-${USER}-cluster-1}"
 ZONE="${ZONE:-us-central1-c}"
 
 gcloud container clusters delete "${CLUSTER}" --zone "${ZONE}"

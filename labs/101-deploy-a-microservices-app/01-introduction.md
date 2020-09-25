@@ -1,6 +1,8 @@
-# Introduction
+# Redis Enterprise and Anthos Cloud Run
 
-[Cloud Run for Anthos] is an integration with [Anthos], Google Cloud’s app modernization platform, that let's you leverage Kubernetes and serverless together.
+This project demonstrates [Redis Enterprise] on Kubernetes integrated with with [Anthos] leveraging [Cloud Run for Anthos], Google Cloud’s app modernization platform, bringing serverless to Google Kubernetes Engine (GKE)
+
+The stateful experience is powered by [Redis Enterprise], bringing low-latency, enterprise ready features to Redis. 
 
 The serverless experience is powered by [Knative], an open source project that supports serverless workloads running on Kubernetes. Kubernetes support is provided by Google Kubernetes Engine (GKE), bringing custom machines types, VPC networking, and integration with any Kubernetes‐based workloads together, as needed by your enterprise solutions.
 
@@ -24,6 +26,7 @@ In this lab, you will deploy a sample [microservices application] using Cloud Ru
 [Cloud Run for Anthos]:  https://cloud.google.com/anthos/run
 [Knative]: https://knative.dev/
 [microservices application]: https://github.com/GoogleCloudPlatform/microservices-demo
+[Redis Enterprise]: https://redislabs.com/redis-enterprise-software/redis-enterprise-on-kubernetes/
 
 ---
 [[toc]](README.md) [[next]](02-setting-up.md)
